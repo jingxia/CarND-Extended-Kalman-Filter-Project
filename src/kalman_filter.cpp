@@ -1,3 +1,4 @@
+#include <iostream>
 #include "kalman_filter.h"
 #include "tools.h"
 
@@ -41,12 +42,36 @@ void KalmanFilter::Update(const VectorXd &z) {
 
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
 
-    Tools::CalculateJacobian(z, Hj_);
-    VectorXd y = z - Hj * x_;
+    Tools::CalculateJacobian(x_, Hj_);
+    
+    VectorXd tmp(3);
+    float sqrSumRt = sqrt(pow(x_(0), 2) + pow(x_(1), 2));
+    
+    if (sqrSumRt == 0)
+    {
+        std::cout << "px == py == 0\n";
+        return;
+    }
+
+    tmp(0) = sqrSumRt;
+    tmp(1) = fabs(x_(0)) > 1e-4 ? atan2(x_(1), x_(0)) : 0;
+    tmp(2) = fabs(sqrSumRt) > 1e-4 ? (x_(2) * x_(0) + x_(1) * x_(3)) / sqrSumRt : 0;
+    
+    VectorXd y = z - tmp;
+    if (y(1) > M_PI)
+    {
+      y(1) -= 2 * M_PI;
+    }
+
+    if (y(1) < -1 * M_PI)
+    {
+      y(1) += 2 * M_PI;
+    }
+
     MatrixXd S = Hj_ * P_ * Hj_.transpose() + Rr_;
     MatrixXd K = P_ * Hj_.transpose() * S.inverse();
 
     x_ = x_ + K * y;
     MatrixXd I = MatrixXd::Identity(x_.size(), x_.size());
-    P_ = (I - K * Hj) * P_;
+    P_ = (I - K * Hj_) * P_;
 }

@@ -33,6 +33,8 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
   rmse = rmse/estimations.size();
   
   rmse = rmse.array().sqrt();
+
+  std::cout << "RMSE " << rmse << "\n";
   
   //return the result
   return rmse;
@@ -45,13 +47,14 @@ void Tools::CalculateJacobian(const VectorXd& x_state, MatrixXd& Hj) {
   float vx = x_state(2);
   float vy = x_state(3);
   
-  if (px == 0 && py == 0)
+  float sqrSum =pow(px, 2) + pow(py, 2);
+
+  if (fabs(sqrSum < 0.0001))
   {
       std::cout << "The px and py are 0 \n";
   }
   else
   {
-      float sqrSum =pow(px, 2) + pow(py, 2);
       Hj(0, 0) = px / sqrt(sqrSum);
       Hj(0, 1) = py / sqrt(sqrSum);
       Hj(0, 2) = 0;
