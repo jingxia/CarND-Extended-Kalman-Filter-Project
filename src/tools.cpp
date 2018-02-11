@@ -52,6 +52,10 @@ void Tools::CalculateJacobian(const VectorXd& x_state, MatrixXd& Hj) {
   if (fabs(sqrSum < 0.0001))
   {
       std::cout << "The px and py are 0 \n";
+      Hj << 0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0;
   }
   else
   {
