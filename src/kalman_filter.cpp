@@ -1,4 +1,6 @@
+#include <iostream>
 #include "kalman_filter.h"
+#include "tools.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -10,33 +12,54 @@ KalmanFilter::KalmanFilter() {}
 
 KalmanFilter::~KalmanFilter() {}
 
-void KalmanFilter::Init(VectorXd &x_in, MatrixXd &P_in, MatrixXd &F_in,
-                        MatrixXd &H_in, MatrixXd &R_in, MatrixXd &Q_in) {
-  x_ = x_in;
-  P_ = P_in;
-  F_ = F_in;
-  H_ = H_in;
-  R_ = R_in;
-  Q_ = Q_in;
-}
-
 void KalmanFilter::Predict() {
-  /**
-  TODO:
-    * predict the state
-  */
+    x_ = F_ * x_;    
+    P_ = F_ * P_ * F_.transpose() + Q_;
 }
 
 void KalmanFilter::Update(const VectorXd &z) {
-  /**
-  TODO:
-    * update the state by using Kalman Filter equations
-  */
+
+    VectorXd y = z - H_ * x_;
+    MatrixXd S = H_ * P_ * H_.transpose() + Rl_;
+    MatrixXd K = P_ * H_.transpose() * S.inverse();
+
+    x_ = x_ + K * y;
+    MatrixXd I = MatrixXd::Identity(x_.size(), x_.size());
+    P_ = (I - K * H_) * P_;
 }
 
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
-  /**
-  TODO:
-    * update the state by using Extended Kalman Filter equations
-  */
+
+    Tools::CalculateJacobian(x_, Hj_);
+    
+    VectorXd tmp(3);
+    float sqrSumRt = sqrt(pow(x_(0), 2) + pow(x_(1), 2));
+    
+    if (sqrSumRt == 0)
+    {
+        std::cout << "px == py == 0\n";
+        return;
+    }
+
+    tmp(0) = sqrSumRt;
+    tmp(1) = fabs(x_(0)) > 1e-4 ? atan2(x_(1), x_(0)) : 0;
+    tmp(2) = fabs(sqrSumRt) > 1e-4 ? (x_(2) * x_(0) + x_(1) * x_(3)) / sqrSumRt : 0;
+    
+    VectorXd y = z - tmp;
+    if (y(1) > M_PI)
+    {
+      y(1) -= 2 * M_PI;
+    }
+
+    if (y(1) < -1 * M_PI)
+    {
+      y(1) += 2 * M_PI;
+    }
+
+    MatrixXd S = Hj_ * P_ * Hj_.transpose() + Rr_;
+    MatrixXd K = P_ * Hj_.transpose() * S.inverse();
+
+    x_ = x_ + K * y;
+    MatrixXd I = MatrixXd::Identity(x_.size(), x_.size());
+    P_ = (I - K * Hj_) * P_;
 }
